@@ -66,10 +66,10 @@ function setAgentValues(){
         pointH[i] = 0;
         pointB[i] = 0;
 
-        randG[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * shiftG[i])) * 3;
-        randD[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * shiftD[i])) * 3;
-        randH[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * shiftH[i])) * 3;
-        randB[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * shiftB[i])) * 3;
+        randG[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * -1)) * 3;
+        randD[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * 1)) * 3;
+        randH[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * -1)) * 3;
+        randB[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * -1)) * 3;
     }
 
     print("Last lines cleared: " + lastClearRate)
