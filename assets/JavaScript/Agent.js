@@ -72,8 +72,8 @@ function setAgentValues(){
         randB[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * shiftB[i])) * 3;
     }
 
-    print(attributes)
     print("Last lines cleared: " + lastClearRate)
+    print(attributes)
 }
 
 function ClearAgentData(){
@@ -332,10 +332,10 @@ function reward(){
             ((attributes[shapeIndex].height + randH[shapeIndex]) * reward.HEIGHT) + 
             ((attributes[shapeIndex].bump + randB[shapeIndex]) * reward.BUMP);   
             
-            // var h = (-1  * reward.GAPS) + 
-            // (1 * reward.DELETE) + 
-            // (-1 * reward.HEIGHT) + 
-            // (-1 * reward.BUMP);
+    // var h = (-1  * reward.GAPS) + 
+    // (1 * reward.DELETE) + 
+    // (-1 * reward.HEIGHT) + 
+    // (-1 * reward.BUMP);
 
 
     if(h > highestReward || highestReward == null){
@@ -397,7 +397,7 @@ function evaluation(){
     }
     
     evaluateMove("gap", side);
-    evaluateMove("gap", below);
+    evaluateMove("gap", below * 2);
     evaluateMove("delete", lineDeletion);
     evaluateMove("height", aggHeight);
     evaluateMove("bump", bump);
@@ -428,14 +428,14 @@ function utility(){
     localStorage.setItem(iterID, iter);
 
     for(var i = 0; i < attributes.length; i++){
-        // if(attributes[i].explore > 0){
-        //     if(score - lastClearRate >= 0){
-        //         attributes[i].explore -= (score - lastClearRate) * 0.01;
-        //     }
-        // }
-        // else{
-        //     attributes[i].explore = 0;
-        // }
+        if(attributes[i].explore > 0){
+            if(score - lastClearRate >= 0){
+                attributes[i].explore -= (score - lastClearRate) * 0.01;
+            }
+        }
+        else{
+            attributes[i].explore = 0;
+        }
 
         var aggLearn = 0;
 
@@ -445,7 +445,7 @@ function utility(){
             attributes[i].gap += randG[i];
         }
         else if(pointG[i] > attributes[i].pG){
-            shiftG *= -2;
+            // shiftG *= -2;
         }
 
         if(pointD[i] > attributes[i].pD){
@@ -454,7 +454,7 @@ function utility(){
             attributes[i].delete += randD[i];
         }
         else if(pointD[i] < attributes[i].pD){
-            shiftD *= -2;
+            // shiftD *= -2;
         }
 
         if(pointH[i] < attributes[i].pH){
@@ -463,7 +463,7 @@ function utility(){
             attributes[i].height += randH[i];
         }
         else if(pointH[i] > attributes[i].pH){
-            shiftH *= -2;
+            // shiftH *= -2;
         }
 
         if(pointB[i] < attributes[i].pB){
@@ -472,16 +472,18 @@ function utility(){
             attributes[i].bump += randB[i];
         }
         else if(pointB[i] > attributes[i].pB){
-            shiftB *= -2;
+            // shiftB *= -2;
         }
 
+        // print(aggLearn);
+
         
-        if(attributes[i].explore > 0){
-            attributes[i].explore -= 0.02 * aggLearn;
-        }
-        else{
-            attributes[i].explore = 0;
-        }
+        // if(attributes[i].explore > 0){
+        //     attributes[i].explore -= 0.02 * aggLearn;
+        // }
+        // else{
+        //     attributes[i].explore = 0;
+        // }
 
         if(score - lastClearRate > 0){
             // attributes[i].gap *= (score - lastClearRate);
