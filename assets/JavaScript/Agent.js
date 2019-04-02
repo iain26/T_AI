@@ -327,15 +327,15 @@ function reward(){
     reward.BUMP = bump
 
     // determine highest reward
-    var h = ((attributes[shapeIndex].gap + randG[shapeIndex] ) * reward.GAPS) + 
-            ((attributes[shapeIndex].delete + randD[shapeIndex] ) * reward.DELETE) + 
-            ((attributes[shapeIndex].height + randH[shapeIndex]) * reward.HEIGHT) + 
-            ((attributes[shapeIndex].bump + randB[shapeIndex]) * reward.BUMP);   
+    // var h = ((attributes[shapeIndex].gap + randG[shapeIndex] ) * reward.GAPS) + 
+    //         ((attributes[shapeIndex].delete + randD[shapeIndex] ) * reward.DELETE) + 
+    //         ((attributes[shapeIndex].height + randH[shapeIndex]) * reward.HEIGHT) + 
+    //         ((attributes[shapeIndex].bump + randB[shapeIndex]) * reward.BUMP);   
             
-    // var h = (-1  * reward.GAPS) + 
-    // (1 * reward.DELETE) + 
-    // (-1 * reward.HEIGHT) + 
-    // (-1 * reward.BUMP);
+    var h = (-1  * reward.GAPS) + 
+    (1 * reward.DELETE) + 
+    (-1 * reward.HEIGHT) + 
+    (-1 * reward.BUMP);
 
 
     if(h > highestReward || highestReward == null){
