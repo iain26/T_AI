@@ -37,19 +37,24 @@ var  iterID = "iteration";
 var  clearID = "clear";
 
 var attributes;
-var iter = 0;
+var iter = 1;
 var lastClearRate = 0;
 
 var passes = 0;
 var rot = 0;
 var endCheck = 0;
 
+var randG = [0, 0, 0, 0, 0, 0, 0 ];
+var randD = [0, 0, 0, 0, 0, 0, 0 ];
+var randH = [0, 0, 0, 0, 0, 0, 0 ];
+var randB = [0, 0, 0, 0, 0, 0, 0 ];
+
+var shiftG = [1, 1, 1, 1, 1, 1, 1 ];
+var shiftD = [1, 1, 1, 1, 1, 1, 1 ];
+var shiftH = [1, 1, 1, 1, 1, 1, 1 ];
+var shiftB = [1, 1, 1, 1, 1, 1, 1 ];
+
 function setAgentValues(){
-    if(50 > 100)
-    {
-        print("Clear Local Storage in first funtion in Agent.js")
-        localStorage.clear();
-    }
 
     attributes = getAttributeValue(attributesID, initialAtt);
     iter = getMiscValue(iterID, iter);
@@ -60,14 +65,20 @@ function setAgentValues(){
         pointD[i] = 0;
         pointH[i] = 0;
         pointB[i] = 0;
+
+        randG[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * shiftG[i])) * 3;
+        randD[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * shiftD[i])) * 3;
+        randH[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * shiftH[i])) * 3;
+        randB[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * shiftB[i])) * 3;
     }
 
-    randG = (Math.random() * ((attributes[shapeIndex].explore) * 2)  - attributes[shapeIndex].explore) * 5;
-    randD = (Math.random() * ((attributes[shapeIndex].explore) * 2)  - attributes[shapeIndex].explore) * 5;
-    randH = (Math.random() * ((attributes[shapeIndex].explore) * 2)  - attributes[shapeIndex].explore) * 5;
-    randB = (Math.random() * ((attributes[shapeIndex].explore) * 2)  - attributes[shapeIndex].explore) * 5;
-
     print(attributes)
+    print("Last lines cleared: " + lastClearRate)
+}
+
+function ClearAgentData(){
+    print("Cleared Local Storage")
+    localStorage.clear();
 }
 
 function getAttributeValue(id, vari){
@@ -170,11 +181,6 @@ function conInput(dir){
 }
 
 var highestReward = null;
-
-var randG = 0;
-var randD = 0;
-var randH = 0;
-var randB = 0;
 
 function reward(){
     var reward = {GAPS: 0, DELETE: 0, HEIGHT: 0, BUMP: 0};
@@ -321,10 +327,10 @@ function reward(){
     reward.BUMP = bump
 
     // determine highest reward
-    var h = ((attributes[shapeIndex].gap + randG ) * reward.GAPS) + 
-            ((attributes[shapeIndex].delete + randD ) * reward.DELETE) + 
-            ((attributes[shapeIndex].height + randH) * reward.HEIGHT) + 
-            ((attributes[shapeIndex].bump + randB) * reward.BUMP);   
+    var h = ((attributes[shapeIndex].gap + randG[shapeIndex] ) * reward.GAPS) + 
+            ((attributes[shapeIndex].delete + randD[shapeIndex] ) * reward.DELETE) + 
+            ((attributes[shapeIndex].height + randH[shapeIndex]) * reward.HEIGHT) + 
+            ((attributes[shapeIndex].bump + randB[shapeIndex]) * reward.BUMP);   
             
             // var h = (-1  * reward.GAPS) + 
             // (1 * reward.DELETE) + 
@@ -417,53 +423,65 @@ function evaluateMove(typeOfScoreAdd, value){
     }
 }
 
-var learningFactor = 1;
-
 function utility(){
     iter++;
     localStorage.setItem(iterID, iter);
 
     for(var i = 0; i < attributes.length; i++){
+        // if(attributes[i].explore > 0){
+        //     if(score - lastClearRate >= 0){
+        //         attributes[i].explore -= (score - lastClearRate) * 0.01;
+        //     }
+        // }
+        // else{
+        //     attributes[i].explore = 0;
+        // }
+
+        var aggLearn = 0;
+
+        if(pointG[i] < attributes[i].pG){
+            aggLearn += attributes[i].pG - pointG[i];
+            attributes[i].pG  = pointG[i];
+            attributes[i].gap += randG[i];
+        }
+        else if(pointG[i] > attributes[i].pG){
+            shiftG *= -2;
+        }
+
+        if(pointD[i] > attributes[i].pD){
+            aggLearn += attributes[i].pD - pointD[i];
+            attributes[i].pD  = pointD[i];
+            attributes[i].delete += randD[i];
+        }
+        else if(pointD[i] < attributes[i].pD){
+            shiftD *= -2;
+        }
+
+        if(pointH[i] < attributes[i].pH){
+            aggLearn += attributes[i].pH - pointH[i];
+            attributes[i].pH  = pointH[i];
+            attributes[i].height += randH[i];
+        }
+        else if(pointH[i] > attributes[i].pH){
+            shiftH *= -2;
+        }
+
+        if(pointB[i] < attributes[i].pB){
+            aggLearn += attributes[i].pB - pointB[i];
+            attributes[i].pB  = pointB[i];
+            attributes[i].bump += randB[i];
+        }
+        else if(pointB[i] > attributes[i].pB){
+            shiftB *= -2;
+        }
+
+        
         if(attributes[i].explore > 0){
-            if(score - lastClearRate >= 0){
-                attributes[i].explore -= (score - lastClearRate) * 0.01;
-            }
+            attributes[i].explore -= 0.02 * aggLearn;
         }
         else{
             attributes[i].explore = 0;
         }
-
-        if(pointG[i] < attributes[i].pG){
-            attributes[i].pG  = pointG[i];
-            attributes[i].gap += randG;
-        }
-        // else if(pointG[i] < attributes[i].pG){
-        //     attributes[i].gap -= randG;
-        // }
-
-        if(pointD[i] > attributes[i].pD){
-            attributes[i].pD  = pointD[i];
-            attributes[i].delete += randD;
-        }
-        // else if(pointD[i] < attributes[i].pD){
-        //     attributes[i].delete -= randD;
-        // }
-
-        if(pointH[i] < attributes[i].pH){
-            attributes[i].pH  = pointH[i];
-            attributes[i].height += randH;
-        }
-        // else if(pointH[i] < attributes[i].pH){
-        //     attributes[i].height -= randH;
-        // }
-
-        if(pointB[i] < attributes[i].pB){
-            attributes[i].pB  = pointB[i];
-            attributes[i].bump += randB;
-        }
-        // else if(pointB[i] < attributes[i].pB){
-        //     attributes[i].bump -= randB;
-        // }
 
         if(score - lastClearRate > 0){
             // attributes[i].gap *= (score - lastClearRate);

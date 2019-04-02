@@ -100,6 +100,10 @@ function toggleBot(){
     }
 }
 
+function clearData(){
+    ClearAgentData();
+}
+
 // functions called from outside this javascript - purpose to change scene
 function viewInstructions(){
     gameState = gameStates.INSTRUCTION;
@@ -177,6 +181,7 @@ function touchXY(evt) {
                 firstPress = currentTouchPoint;
                 playButtonCheck(firstPress);
                 botButtonCheck(firstPress);
+                clearButtonCheck(firstPress);
             }
         break;
         case gameStates.INSTRUCTION:

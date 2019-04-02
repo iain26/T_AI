@@ -128,6 +128,7 @@ function gameLoop() {
     if(ghostCalculated == true){
         timeStepUpdate();
         placementCheck();
+        checkLine();
         update();
         ghost();
         if(artAgent == true){
@@ -431,7 +432,6 @@ function placement(){
     }
 
     createNewShape();
-    checkLine();
 }
 
 function emptyShapeElements() {
