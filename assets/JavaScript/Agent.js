@@ -27,10 +27,10 @@ var initialAtt = [
     "pG" : 0, "pD" : 0, "pH" : 0, "pB" : 0,
     "gap": 0,"delete": 0,"height": 0,"bump": 0}];
 
-var pointG = [0, 0, 0, 0, 0, 0, 0 ];
-var pointD = [0, 0, 0, 0, 0, 0, 0 ];
-var pointH = [0, 0, 0, 0, 0, 0, 0 ];
-var pointB = [0, 0, 0, 0, 0, 0, 0 ];
+var currentG = [0, 0, 0, 0, 0, 0, 0 ];
+var currentD = [0, 0, 0, 0, 0, 0, 0 ];
+var currentH = [0, 0, 0, 0, 0, 0, 0 ];
+var currentB = [0, 0, 0, 0, 0, 0, 0 ];
 
 var  attributesID = "attributes";
 var  iterID = "iteration";
@@ -61,19 +61,22 @@ function setAgentValues(){
     lastClearRate = getMiscValue(clearID, lastClearRate);
 
     for(var i = 0; i < attributes.length; i++){
-        pointG[i] = 0;
-        pointD[i] = 0;
-        pointH[i] = 0;
-        pointB[i] = 0;
+        currentG[i] = 0;
+        currentD[i] = 0;
+        currentH[i] = 0;
+        currentB[i] = 0;
 
-        randG[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * -1)) * 3;
-        randD[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * 1)) * 3;
-        randH[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * -1)) * 3;
-        randB[i] = (Math.random() * ((attributes[i].explore) * 2)  + (-attributes[i].explore * -1)) * 3;
+        randG[i] = (Math.random() * ((attributes[i].explore) * 2) + (-attributes[i].explore));
+        randD[i] = (Math.random() * ((attributes[i].explore) * 2) + (-attributes[i].explore));
+        randH[i] = (Math.random() * ((attributes[i].explore) * 2) + (-attributes[i].explore));
+        randB[i] = (Math.random() * ((attributes[i].explore) * 2) + (-attributes[i].explore));
     }
 
-    print("Last lines cleared: " + lastClearRate)
-    print(attributes)
+    
+    if(localStorage.getItem(iterID) != 1 ){
+        print("Last lines cleared: " + lastClearRate)
+        print(attributes)
+    }
 }
 
 function ClearAgentData(){
@@ -102,6 +105,7 @@ function getMiscValue(id, vari){
 }
 
 function renAlgo() {
+
     if(agentNewShape == true){
         attributes[shapeIndex].runs++;
         highestReward =null;
@@ -160,9 +164,11 @@ function renAlgo() {
         rot = 0;
 
         if(currentX > aimX){
+            currentY = -4;
             newDir = desired.left;
         }
         if(currentX < aimX){
+            currentY = -4;
             newDir = desired.right;
         }
         if(currentX == aimX){
@@ -183,7 +189,10 @@ function conInput(dir){
 var highestReward = null;
 
 function reward(){
+
     var reward = {GAPS: 0, DELETE: 0, HEIGHT: 0, BUMP: 0};
+
+    // Gaps
 
     var checkB = [];
     var diffB = [];
@@ -193,8 +202,6 @@ function reward(){
 
     var checkL = [];
     var diffL = [];
-
-    // Gaps
     for (var i = 0; i < shape.length; i++) {
 
         var right = (BlockGridPosX[i]) + 1;
@@ -223,7 +230,6 @@ function reward(){
                 }
             }
         }
-
 
         if(right < xGridAmount){
             for (var j = 0; j < shape.length; j++) {
@@ -283,25 +289,46 @@ function reward(){
     }
     reward.GAPS = (checkB.length) + (checkR.length) + (checkL.length);
 
+    const aggregate = (a, c) => a + c;
     //lines
-    var lineCompletion = 0;
     var yLineAmount = [];
-    for (var y = 0; y < yGridAmount; y++) {
+    var blockPresent = false;
+    var yToAdd = [];
+    for (var y = yGridAmount - 1; y >= 0; y--) {
         var lineAmount = 0;
         for(x = 0; x < xGridAmount; x++){
-            if(surfaceBlock[x][y] != null){
+            for (var i = 0; i < shape.length; i++) {
+                if(surfaceBlock[x][y] != null || (x == BlockGridPosX[i] && y == ghostCurrentY + BlockShapePosY[i] - lowestY)){
+                    blockPresent = true;
+                }
+                if(x == BlockGridPosX[i] && y == ghostCurrentY + BlockShapePosY[i] - lowestY){
+                    yToAdd.push(y);
+                }
+            }
+            if(blockPresent == true){
+                blockPresent = false;
                 lineAmount++;
             }
         }
-        yLineAmount.push(lineAmount);
+        if(yToAdd.includes(y)){
+            yLineAmount.push(lineAmount);
+        }
     }
-    for (var i = 0; i < shape.length; i++) {
-        lineCompletion += yLineAmount[ghostCurrentY + BlockShapePosY[i] - lowestY];
+    var clearedLines = 0;
+    for(var i = 0; i < yLineAmount.length; i++){
+        if(yLineAmount[i] == 10){
+            clearedLines ++;
+        }
     }
-    reward.DELETE = lineCompletion;
+    reward.DELETE = yLineAmount.reduce(aggregate) - (10 * clearedLines);
 
     // aggregate height
     var columnHeight = [];
+    var xToAdd = [];
+    var xHeight = [];
+
+    var xBump = [];
+    var countCheck = [];
 
     for(var x = 0; x < xGridAmount; x++){
         var height = 0;
@@ -310,78 +337,96 @@ function reward(){
                 if(surfaceBlock[x][y] != null || (x == BlockGridPosX[i] && y == ghostCurrentY + BlockShapePosY[i] - lowestY)){
                     height = yGridAmount - y;
                 }
+                if((x == BlockGridPosX[i] && y == ghostCurrentY + BlockShapePosY[i] - lowestY)){
+                    xToAdd.push(x);
+                }
             }
         }
         columnHeight.push(height);
     }
-    const aggregate = (a, c) => a + c;
-    reward.HEIGHT = (columnHeight.reduce(aggregate));
+
+    for(var count = 0; count < xToAdd.length; count++){
+        if(countCheck.includes(xToAdd[count])){
+            continue;
+        }
+        countCheck.push(xToAdd[count]);
+
+        if(count == 0){
+            if(xToAdd[count] > 0){
+                xBump.push(columnHeight[xToAdd[count] - 1]);
+            }
+        }
+
+        xHeight.push(columnHeight[xToAdd[count]]);
+        xBump.push(columnHeight[xToAdd[count]]);
+
+        if(xToAdd[count] == xToAdd[xToAdd.length - 1]){
+            if(xToAdd[count] < xGridAmount - 1){
+                xBump.push(columnHeight[xToAdd[count] + 1]);
+            }
+        }
+    }
+    reward.HEIGHT = (xHeight.reduce(aggregate));
 
     // bump
     var bump = 0;
-    for(var i = 0; i < columnHeight.length; i++){
-        if(i < columnHeight.length -1 ){
-            bump += Math.abs(columnHeight[i+1] - columnHeight[i]);
+    for(var i = 0; i < xBump.length; i++){
+        if(i < xBump.length -1 ){
+            bump += Math.abs(xBump[i+1] - xBump[i]);
         }
     }
     reward.BUMP = bump
 
-    // determine highest reward
-    // var h = ((attributes[shapeIndex].gap + randG[shapeIndex] ) * reward.GAPS) + 
-    //         ((attributes[shapeIndex].delete + randD[shapeIndex] ) * reward.DELETE) + 
-    //         ((attributes[shapeIndex].height + randH[shapeIndex]) * reward.HEIGHT) + 
-    //         ((attributes[shapeIndex].bump + randB[shapeIndex]) * reward.BUMP);   
+    // determine reward
+    var h = ((attributes[shapeIndex].gap + randG[shapeIndex] ) * reward.GAPS) + 
+            ((attributes[shapeIndex].delete + randD[shapeIndex] ) * reward.DELETE) + 
+            ((attributes[shapeIndex].height + randH[shapeIndex]) * reward.HEIGHT) + 
+            ((attributes[shapeIndex].bump + randB[shapeIndex]) * reward.BUMP);   
             
-    var h = (-1  * reward.GAPS) + 
-    (1 * reward.DELETE) + 
-    (-1 * reward.HEIGHT) + 
-    (-1 * reward.BUMP);
+    // var h = (-1  * reward.GAPS) + 
+    // (1 * reward.DELETE) + 
+    // (-1 * reward.HEIGHT) + 
+    // (-1 * reward.BUMP);
 
-
+    //determine highest reward
     if(h > highestReward || highestReward == null){
         highestReward =  h;
         rot = passes;
-
         return currentX;
     }
+    //else return current target
     return aimX;
 }
 
 function evaluation(){
+
     var below = 0;
-    var side = 0;
-
-    var lineDeletion = 0;
-    var columnHeight = [];
+    var numBlocks = 0;
     var aggHeight = 0;
+    var bumpSurface = 0;
 
-    for (var i = 0; i < shape.length; i++) {
-        if(gridCellOccupied[BlockGridPosX[i]][BlockGridPosY[i] + 1] == false){
-            below++;
-        }
-        if(BlockGridPosX[i] != 0){
-            if(gridCellOccupied[BlockGridPosX[i] - 1][BlockGridPosY[i]] == false){
-                side++;
+    for(var y = yGridAmount - 1; y >= 0; y--){
+        var amount = 0;
+        for(var x = 0; x < xGridAmount; x++){
+            if(surfaceBlock[x][y] != null){
+                amount++;
+                numBlocks++;
             }
         }
-        if(BlockGridPosX[i] != xGridAmount - 1){
-            if(gridCellOccupied[BlockGridPosX[i] + 1][BlockGridPosY[i]] == false){
-                side++;
-            }
-        }
-        
-        for (var x = 0; x < xGridAmount; x++) {
-            if(gridCellOccupied[x][BlockGridPosY[i]] == true){
-                lineDeletion++;
-            }
+        if(amount == 10){
+            numBlocks -= amount;
         }
     }
-
+    
+    var columnHeight = [];
     for(var x = 0; x < xGridAmount; x++){
         var height = 0;
         for(var y = yGridAmount - 1; y >= 0; y--){
             if(surfaceBlock[x][y] != null ){
                 height = yGridAmount - y;
+            } 
+            if(surfaceBlock[x][y] == null && (y != 0 && surfaceBlock[x][y-1] != null)){
+                below++;
             } 
         }
         columnHeight.push(height);
@@ -389,18 +434,17 @@ function evaluation(){
     const aggregate = (a, c) => a + c;
     aggHeight = (columnHeight.reduce(aggregate));
     
-    var bump = 0;
     for(var i = 0; i < columnHeight.length; i++){
         if(i < columnHeight.length -1 ){
-            bump += Math.abs(columnHeight[i+1] - columnHeight[i]);
+            bumpSurface += Math.abs(columnHeight[i+1] - columnHeight[i]);
         }
     }
     
-    evaluateMove("gap", side);
-    evaluateMove("gap", below * 2);
-    evaluateMove("delete", lineDeletion);
+    // evaluateMove("gap", side);
+    evaluateMove("gap", below);
+    evaluateMove("delete", numBlocks);
     evaluateMove("height", aggHeight);
-    evaluateMove("bump", bump);
+    evaluateMove("bump", bumpSurface);
 }
 
 function evaluateMove(typeOfScoreAdd, value){
@@ -409,90 +453,58 @@ function evaluateMove(typeOfScoreAdd, value){
             score += 1;
             break;
         case "gap":
-            pointG[shapeIndex] += -1 * value;
+            currentG[shapeIndex] += value;
             break;
         case "delete":
-            pointD[shapeIndex] += 1 * value;
+            currentD[shapeIndex] += value;
             break;
         case "height":
-            pointH[shapeIndex] += -1 * value;
+            currentH[shapeIndex] += value;
             break;
         case "bump":
-            pointB[shapeIndex] += -1 * value;
+            currentB[shapeIndex] += value;
             break;
     }
 }
 
 function utility(){
-    iter++;
-    localStorage.setItem(iterID, iter);
+
+    if(attributes[0].explore > 0){
+        iter++;
+        localStorage.setItem(iterID, iter);
+    }
 
     for(var i = 0; i < attributes.length; i++){
         if(attributes[i].explore > 0){
             if(score - lastClearRate >= 0){
-                attributes[i].explore -= (score - lastClearRate) * 0.01;
+                attributes[i].explore -= (score - lastClearRate) * 0.005;
             }
         }
-        else{
+        if(attributes[i].explore <= 0){
             attributes[i].explore = 0;
         }
 
-        var aggLearn = 0;
-
-        if(pointG[i] < attributes[i].pG){
-            aggLearn += attributes[i].pG - pointG[i];
-            attributes[i].pG  = pointG[i];
+        if(currentG[i] < attributes[i].pG){
+            attributes[i].pG  = currentG[i];
             attributes[i].gap += randG[i];
         }
-        else if(pointG[i] > attributes[i].pG){
-            // shiftG *= -2;
-        }
 
-        if(pointD[i] > attributes[i].pD){
-            aggLearn += attributes[i].pD - pointD[i];
-            attributes[i].pD  = pointD[i];
+        if(currentD[i] < attributes[i].pD){
+            attributes[i].pD  = currentD[i];
             attributes[i].delete += randD[i];
         }
-        else if(pointD[i] < attributes[i].pD){
-            // shiftD *= -2;
-        }
 
-        if(pointH[i] < attributes[i].pH){
-            aggLearn += attributes[i].pH - pointH[i];
-            attributes[i].pH  = pointH[i];
+        if(currentH[i] < attributes[i].pH){
+            attributes[i].pH  = currentH[i];
             attributes[i].height += randH[i];
         }
-        else if(pointH[i] > attributes[i].pH){
-            // shiftH *= -2;
-        }
 
-        if(pointB[i] < attributes[i].pB){
-            aggLearn += attributes[i].pB - pointB[i];
-            attributes[i].pB  = pointB[i];
+        if(currentB[i] < attributes[i].pB){
+            attributes[i].pB  = currentB[i];
             attributes[i].bump += randB[i];
         }
-        else if(pointB[i] > attributes[i].pB){
-            // shiftB *= -2;
-        }
-
-        // print(aggLearn);
-
-        
-        // if(attributes[i].explore > 0){
-        //     attributes[i].explore -= 0.02 * aggLearn;
-        // }
-        // else{
-        //     attributes[i].explore = 0;
-        // }
-
-        if(score - lastClearRate > 0){
-            // attributes[i].gap *= (score - lastClearRate);
-            // attributes[i].delete *= (score - lastClearRate);
-            // attributes[i].height *= (score - lastClearRate);
-            // attributes[i].bump *= (score - lastClearRate);
-        }
     }
-    localStorage.setItem(clearID, score);
 
+    localStorage.setItem(clearID, score);
     localStorage.setItem(attributesID, JSON.stringify(attributes));
 }
