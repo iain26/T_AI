@@ -48,12 +48,6 @@ var randG = [0, 0, 0, 0, 0, 0, 0 ];
 var randD = [0, 0, 0, 0, 0, 0, 0 ];
 var randH = [0, 0, 0, 0, 0, 0, 0 ];
 var randB = [0, 0, 0, 0, 0, 0, 0 ];
-
-var shiftG = [1, 1, 1, 1, 1, 1, 1 ];
-var shiftD = [1, 1, 1, 1, 1, 1, 1 ];
-var shiftH = [1, 1, 1, 1, 1, 1, 1 ];
-var shiftB = [1, 1, 1, 1, 1, 1, 1 ];
-
 function setAgentValues(){
 
     attributes = getAttributeValue(attributesID, initialAtt);
@@ -66,10 +60,13 @@ function setAgentValues(){
         currentH[i] = 0;
         currentB[i] = 0;
 
-        randG[i] = (Math.random() * ((attributes[i].explore) * 2) + (-attributes[i].explore));
-        randD[i] = (Math.random() * ((attributes[i].explore) * 2) + (-attributes[i].explore));
-        randH[i] = (Math.random() * ((attributes[i].explore) * 2) + (-attributes[i].explore));
-        randB[i] = (Math.random() * ((attributes[i].explore) * 2) + (-attributes[i].explore));
+        
+        attributes[i].runs = 0;
+
+        randG[i] = (Math.random() * ((attributes[i].explore) * 4) + (-attributes[i].explore * 4));
+        randD[i] = (Math.random() * ((attributes[i].explore) * 4));
+        randH[i] = (Math.random() * ((attributes[i].explore) * 4) + (-attributes[i].explore * 4));
+        randB[i] = (Math.random() * ((attributes[i].explore) * 4) + (-attributes[i].explore * 4));
     }
 
     
@@ -314,13 +311,8 @@ function reward(){
             yLineAmount.push(lineAmount);
         }
     }
-    var clearedLines = 0;
-    for(var i = 0; i < yLineAmount.length; i++){
-        if(yLineAmount[i] == 10){
-            clearedLines ++;
-        }
-    }
-    reward.DELETE = yLineAmount.reduce(aggregate) - (10 * clearedLines);
+    if(yLineAmount.length != 0){ reward.DELETE = yLineAmount.reduce(aggregate); }
+    else{ reward.DELETE = 0; }
 
     // aggregate height
     var columnHeight = [];
@@ -366,7 +358,8 @@ function reward(){
             }
         }
     }
-    reward.HEIGHT = (xHeight.reduce(aggregate));
+    if(xHeight.length != 0){ reward.HEIGHT = xHeight.reduce(aggregate); }
+    else{ reward.HEIGHT = 0; }
 
     // bump
     var bump = 0;
@@ -386,7 +379,7 @@ function reward(){
     // var h = (-1  * reward.GAPS) + 
     // (1 * reward.DELETE) + 
     // (-1 * reward.HEIGHT) + 
-    // (-1 * reward.BUMP);
+    // (-1 * reward.BUMP);            
 
     //determine highest reward
     if(h > highestReward || highestReward == null){
@@ -398,23 +391,28 @@ function reward(){
     return aimX;
 }
 
+var lastBelow = [0, 0, 0, 0, 0, 0, 0 ];
+var lastNumBlocks = [0, 0, 0, 0, 0, 0, 0 ];
+var lastAggHeight = [0, 0, 0, 0, 0, 0, 0 ];
+var lastBumpSurface = [0, 0, 0, 0, 0, 0, 0 ];
+
 function evaluation(){
 
-    var below = 0;
-    var numBlocks = 0;
-    var aggHeight = 0;
-    var bumpSurface = 0;
+    var currentBelow = 0;
+    var currentNumBlocks = 0;
+    var currentAggHeight = 0;
+    var currentBumpSurface = 0;
 
     for(var y = yGridAmount - 1; y >= 0; y--){
         var amount = 0;
         for(var x = 0; x < xGridAmount; x++){
             if(surfaceBlock[x][y] != null){
                 amount++;
-                numBlocks++;
+                currentNumBlocks++;
             }
         }
         if(amount == 10){
-            numBlocks -= amount;
+            currentNumBlocks -= amount;
         }
     }
     
@@ -426,25 +424,41 @@ function evaluation(){
                 height = yGridAmount - y;
             } 
             if(surfaceBlock[x][y] == null && (y != 0 && surfaceBlock[x][y-1] != null)){
-                below++;
+                currentBelow++;
+                if(y != yGridAmount - 1){
+                    if(surfaceBlock[x][y+1] == null){
+                        currentBelow++;
+                    }
+                }
             } 
         }
         columnHeight.push(height);
     }
     const aggregate = (a, c) => a + c;
-    aggHeight = (columnHeight.reduce(aggregate));
+    if(columnHeight.length != 0){ currentAggHeight = columnHeight.reduce(aggregate); }
+    else{ currentAggHeight = 0; }
     
     for(var i = 0; i < columnHeight.length; i++){
         if(i < columnHeight.length -1 ){
-            bumpSurface += Math.abs(columnHeight[i+1] - columnHeight[i]);
+            currentBumpSurface += Math.abs(columnHeight[i+1] - columnHeight[i]);
         }
     }
+
+    // currentBelow = lastBelow[shapeIndex] - currentBelow;
+    // currentNumBlocks = lastNumBlocks[shapeIndex] - currentNumBlocks;
+    // currentAggHeight = lastAggHeight[shapeIndex] - currentAggHeight;
+    // currentBumpSurface = lastBumpSurface[shapeIndex] - currentBumpSurface;
     
     // evaluateMove("gap", side);
-    evaluateMove("gap", below);
-    evaluateMove("delete", numBlocks);
-    evaluateMove("height", aggHeight);
-    evaluateMove("bump", bumpSurface);
+    evaluateMove("gap", currentBelow);
+    evaluateMove("delete", currentNumBlocks);
+    evaluateMove("height", currentAggHeight);
+    evaluateMove("bump", currentBumpSurface);
+
+    lastBelow[shapeIndex] = currentBelow;
+    lastNumBlocks[shapeIndex] = currentNumBlocks;
+    lastAggHeight[shapeIndex] = currentAggHeight;
+    lastBumpSurface[shapeIndex] = currentBumpSurface;
 }
 
 function evaluateMove(typeOfScoreAdd, value){
@@ -477,32 +491,37 @@ function utility(){
     for(var i = 0; i < attributes.length; i++){
         if(attributes[i].explore > 0){
             if(score - lastClearRate >= 0){
-                attributes[i].explore -= (score - lastClearRate) * 0.005;
+                attributes[i].explore -= (score - lastClearRate) * 0.01;
             }
         }
         if(attributes[i].explore <= 0){
             attributes[i].explore = 0;
         }
 
+        currentG[i] = currentG[i] / attributes[i].runs;
+        currentD[i] = currentD[i] / attributes[i].runs;
+        currentH[i] = currentH[i] / attributes[i].runs;
+        currentB[i] = currentB[i] / attributes[i].runs;
+
         if(currentG[i] > attributes[i].pG){
             attributes[i].gap += randG[i];
+            attributes[i].pG  = currentG[i];
         }
-        attributes[i].pG  = currentG[i];
 
         if(currentD[i] > attributes[i].pD){
             attributes[i].delete += randD[i];
+            attributes[i].pD  = currentD[i];
         }
-        attributes[i].pD  = currentD[i];
 
         if(currentH[i] > attributes[i].pH){
             attributes[i].height += randH[i];
+            attributes[i].pH  = currentH[i];
         }
-        attributes[i].pH  = currentH[i];
 
         if(currentB[i] > attributes[i].pB){
             attributes[i].bump += randB[i];
+            attributes[i].pB  = currentB[i];
         }
-        attributes[i].pB  = currentB[i];
     }
 
     localStorage.setItem(clearID, score);
