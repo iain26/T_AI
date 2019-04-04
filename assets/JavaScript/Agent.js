@@ -484,25 +484,25 @@ function utility(){
             attributes[i].explore = 0;
         }
 
-        if(currentG[i] < attributes[i].pG){
-            attributes[i].pG  = currentG[i];
+        if(currentG[i] > attributes[i].pG){
             attributes[i].gap += randG[i];
         }
+        attributes[i].pG  = currentG[i];
 
-        if(currentD[i] < attributes[i].pD){
-            attributes[i].pD  = currentD[i];
+        if(currentD[i] > attributes[i].pD){
             attributes[i].delete += randD[i];
         }
+        attributes[i].pD  = currentD[i];
 
-        if(currentH[i] < attributes[i].pH){
-            attributes[i].pH  = currentH[i];
+        if(currentH[i] > attributes[i].pH){
             attributes[i].height += randH[i];
         }
+        attributes[i].pH  = currentH[i];
 
-        if(currentB[i] < attributes[i].pB){
-            attributes[i].pB  = currentB[i];
+        if(currentB[i] > attributes[i].pB){
             attributes[i].bump += randB[i];
         }
+        attributes[i].pB  = currentB[i];
     }
 
     localStorage.setItem(clearID, score);
