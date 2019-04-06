@@ -132,7 +132,7 @@ function gameLoop() {
         update();
         ghost();
         if(artAgent == true){
-            renAlgo();
+            agentAlgorithm();
         }
         renderGame();
         if(playing == true){
@@ -498,7 +498,7 @@ function checkLine() {
 
 // start from first row to delete up and replace the grid values with ones from 1 grid space up
 function lineDeletion(yStart) {
-    evaluateMove("line cleared", null);
+    addToPoints("line cleared", null);
     for (var yG = yStart; yG > 0; yG--) {
         for (var x = 0; x < xGridAmount; x++) {
             gridCellOccupied[x][yG] = gridCellOccupied[x][yG - 1];
