@@ -35,10 +35,12 @@ var pointsB = [0, 0, 0, 0, 0, 0, 0 ];
 var  attributesID = "attributes";
 var  iterID = "iteration";
 var  clearID = "clear";
+var  highID = "high";
 
 var attributes;
 var iter = 1;
 var lastClearRate = 0;
+var highClearRate = 0;
 
 var passes = 0;
 var rot = 0;
@@ -49,12 +51,15 @@ var randD = [0, 0, 0, 0, 0, 0, 0 ];
 var randH = [0, 0, 0, 0, 0, 0, 0 ];
 var randB = [0, 0, 0, 0, 0, 0, 0 ];
 
+// set attributes of each shape, iteration, clear lines and highest lines
 function setAgentValues(){
 
     attributes = getAttributeValue(attributesID, initialAtt);
     iter = getMiscValue(iterID, iter);
     lastClearRate = getMiscValue(clearID, lastClearRate);
+    highClearRate = getMiscValue(highID, highClearRate);
 
+    // 
     for(var i = 0; i < attributes.length; i++){
         pointsG[i] = 0;
         pointsD[i] = 0;
@@ -69,18 +74,23 @@ function setAgentValues(){
         randB[i] = (Math.random() * (attributes[i].explore * -1));
     }
 
-    
+    // display data in console log
     if(localStorage.getItem(iterID) != 1 ){
-        print("Last lines cleared: " + lastClearRate)
-        print(attributes)
+        print("Last lines cleared: " + lastClearRate + ", Time: " + Date())
+        if(attributes[0].explore > 0 ||attributes[1].explore > 0 ||attributes[2].explore > 0 ||
+            attributes[3].explore > 0 ||attributes[4].explore > 0 || attributes[5].explore > 0 ||attributes[6].explore > 0){
+            print(attributes)
+        }
     }
 }
 
+// close the file stored locally
 function ClearAgentData(){
     print("Cleared Local Storage")
     localStorage.clear();
 }
 
+// save to client side file in JSON format
 function getAttributeValue(id, vari){
     if(localStorage.getItem(id) != null){
          return JSON.parse(localStorage.getItem(id));
@@ -91,6 +101,7 @@ function getAttributeValue(id, vari){
     }
 }
 
+// ave to client side file
 function getMiscValue(id, vari){
     if(localStorage.getItem(id) != null){
         return localStorage.getItem(id);
@@ -101,8 +112,9 @@ function getMiscValue(id, vari){
     }
 }
 
-function agentAlgorithm() {
-
+//movement and find target
+function agentAlgorithm(updateMove) {
+    // new shape reset shape values
     if(agentNewShape == true){
         attributes[shapeIndex].runs++;
         highestReward =null;
@@ -112,54 +124,61 @@ function agentAlgorithm() {
         changeX = -1;
     }
     
+    // the shape is still searching left to right
     if(completeRun == false){
         currentY = -4;
         if(agentNewShape == true){
             agentNewShape = false;
         }
-        var move = true;
-        for (var i = 0; i < shape.length; i++) {
-            var tempX = BlockGridPosX[i] + changeX;
-            if(changeX < 0){
-                if(BlockGridPosX[i] <= 0){
-                    changeX = 1;
-                } 
+        if(updateMove == true){
+            var move = true;
+            for (var i = 0; i < shape.length; i++) {
+                var tempX = BlockGridPosX[i] + changeX;
+                if(changeX < 0){
+                    if(BlockGridPosX[i] <= 0){
+                        changeX = 1;
+                    } 
 
-            }
-            if(changeX > 0){
-                if(BlockGridPosX[i] >= xGridAmount - 1){
-                    changeX = -1;
-                    if(passes >= 4){
-                        completeRun = true;
-                    }
-                    else{
-                        rotateShape(1);
-                        passes++;
+                }
+                if(changeX > 0){
+                    if(BlockGridPosX[i] >= xGridAmount - 1){
+                        changeX = -1;
+                        if(passes >= 4){
+                            completeRun = true;
+                        }
+                        else{
+                            // rotate when shape hits right wall
+                            rotateShape(1);
+                            passes++;
+                        }
                     }
                 }
+                if(tempX < 0 || tempX >= xGridAmount){
+                    move = false;
+                }
             }
-            if(tempX < 0 || tempX >= xGridAmount){
-                move = false;
-            }
-        }
-        if(move == true)
-        {
-            aimX = reward()
-            if(changeX > 0){
-                newDir = desired.right;
-            }
-            else if(changeX < 0){
-                newDir = desired.left;
+            if(move == true)
+            {
+                // find target pos
+                aimX = reward()
+                if(changeX > 0){
+                    newDir = desired.right;
+                }
+                else if(changeX < 0){
+                    newDir = desired.left;
+                }
             }
         }
     }
 
     if(completeRun == true){
+        // rotate by amount 
         for(var r = 0; r < rot; r++){
             rotateShape(1);
         }
         rot = 0;
 
+        // move towards and stop on target
         if(currentX > aimX){
             currentY = -4;
             newDir = desired.left;
@@ -177,6 +196,7 @@ function agentAlgorithm() {
 
 var move = {x: 0, y: 0};
 
+// passes fake input meant to simulate touch presses
 function conInput(dir){
     move = {x: gridCellX[BlockGridPosX[0]]  + (canvas.width * dir), y:0};
     moveShape(move);
@@ -286,11 +306,14 @@ function reward(){
     }
     reward.GAPS = (checkB.length) + (checkR.length) + (checkL.length);
 
-    const aggregate = (a, c) => a + c;
     //lines
+    
+    const aggregate = (a, c) => a + c;
+    
     var yLineAmount = [];
     var blockPresent = false;
     var yToAdd = [];
+
     for (var y = yGridAmount - 1; y >= 0; y--) {
         var lineAmount = 0;
         for(x = 0; x < xGridAmount; x++){
@@ -479,42 +502,49 @@ function addToPoints(typeOfScoreAdd, value){
 
 function utility(){
 
-    if(attributes[0].explore > 0){
+    if(attributes[0].explore > 0 ||attributes[1].explore > 0 ||attributes[2].explore > 0 ||
+        attributes[3].explore > 0 ||attributes[4].explore > 0 || attributes[5].explore > 0 ||attributes[6].explore > 0){
         iter++;
         localStorage.setItem(iterID, iter);
     }
 
     for(var i = 0; i < attributes.length; i++){
         if(attributes[i].explore > 0){
-            if(score - lastClearRate >= 0){
-                attributes[i].explore -= (score - lastClearRate) * 0.01;
+            if(score > highClearRate)
+            {
+                attributes[i].gap += randG[i];
+                attributes[i].delete += randD[i];
+                attributes[i].height += randH[i];
+                attributes[i].bump += randB[i];
             }
         }
+
+        if(score - lastClearRate >= 0){
+            var change = ((attributes[i].pG + attributes[i].pD + attributes[i].pH + attributes[i].pB) -
+                    (pointsG[i] + pointsD[i] + pointsH[i] + pointsB[i])) * 0.005;
+            if(change > 0){
+                attributes[i].explore -= change;
+            }
+            attributes[i].pG  = pointsG[i];
+            attributes[i].pD  = pointsD[i];
+            attributes[i].pH  = pointsH[i];
+            attributes[i].pB  = pointsB[i];
+        }
+        
+        if(score == lastClearRate && score < highClearRate){
+            attributes[i].explore *= 0.8;
+        }
+        
         if(attributes[i].explore <= 0){
             attributes[i].explore = 0;
         }
-
-        if(pointsG[i] < attributes[i].pG || attributes[i].pG == null){
-            attributes[i].gap += randG[i];
-            attributes[i].pG  = pointsG[i];
-        }
-
-        if(pointsD[i] > attributes[i].pD || attributes[i].pD == null){
-            attributes[i].delete += randD[i];
-            attributes[i].pD  = pointsD[i];
-        }
-
-        if(pointsH[i] < attributes[i].pH || attributes[i].pH == null){
-            attributes[i].height += randH[i];
-            attributes[i].pH  = pointsH[i];
-        }
-
-        if(pointsB[i] < attributes[i].pB || attributes[i].pB == null){
-            attributes[i].bump += randB[i];
-            attributes[i].pB  = pointsB[i];
-        }
     }
 
+
+    if(score > highClearRate)
+    {
+        localStorage.setItem(highID, score);
+    }
     localStorage.setItem(clearID, score);
     localStorage.setItem(attributesID, JSON.stringify(attributes));
 }

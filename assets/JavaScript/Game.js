@@ -62,6 +62,7 @@ function startGame(){
 function initialiseGame() {
     reset();
     if(artAgent){
+        rand = 1;
         setAgentValues();
     }
     if (canvas.getContext)
@@ -125,26 +126,21 @@ function timeStepUpdate() {
 
 // loop that holds main mechanics run each animation frame until end condition met
 function gameLoop() {
-    if(ghostCalculated == true){
-        timeStepUpdate();
-        placementCheck();
-        checkLine();
-        update();
-        ghost();
+    timeStepUpdate();
+    placementCheck();
+    checkLine();
+    update();
+    ghost();
+    renderGame();
+    if(playing == true){
+        requestAnimationFrame(gameLoop);
+    }
+    else{
         if(artAgent == true){
-            agentAlgorithm();
-        }
-        renderGame();
-        if(playing == true){
-            requestAnimationFrame(gameLoop);
+            initialiseGame();
         }
         else{
-            if(artAgent == true){
-                initialiseGame();
-            }
-            else{
-                stopGame();
-            }
+            stopGame();
         }
     }
 }
@@ -199,56 +195,65 @@ function reset(){
     particles.length = 0;
 }
 
-var ghostCalculated = true;
-
+var runGhost = true;
 // The outlined object below the shape
 function ghost(){
-    ghostCalculated = false;
-    var surfaceX = [];
-    var surfaceY = [];
+    if(runGhost == true){
+        runGhost = false;
+        var surfaceX = [];
+        var surfaceY = [];
 
-    // searches every surface block below the shape
-    for (var x = (lowestX + currentX); x <= (highestX + currentX); x++) {
-        for (var y = (highestY + currentY); y < yGridAmount; y++) {
-            if(surfaceBlock[x][y] != null ){
-                surfaceX.push(x);
-                surfaceY.push(y);
-            }
-        }
-    }
+        var updateAgent = false;
 
-    // sets ghost shapes y position equal to the lowest point
-    if(surfaceY.length == 0){
-        ghostCurrentY = yGridAmount - 1;
-    }
-    else{
-        ghostCurrentY = Math.min(...surfaceY);
-        // an offset to apply to L and J shape when vertical as the shape seemingly floats otherwise
-        var counter = 0;
-        for (var i = 0; i < shape.length; i++) {
-            if(BlockShapePosY[i] == 0 && lowestY - highestY > 1){
-                counter++;
-            }
-        }
-        if(counter == 2 && ghostCurrentY != yGridAmount - 1){
-            ghostCurrentY++;
-        }
-        // if ghost shape inside a surface block displace up
-        for (var i = 0; i < shape.length; i++) {
-            for (var s = 0; s < surfaceX.length; s++) {
-                var ghostX = BlockShapePosX[i] + currentX;
-                var ghostY = ghostCurrentY + BlockShapePosY[i]- lowestY;
-                if(ghostX == surfaceX[s] && surfaceY[s] == ghostY){
-                    ghostCurrentY--;
-                    // search for every individual block and surface value again if ghost shape displaced
-                    i = -1;
-                    s = -1;
+        // searches every surface block below the shape
+        for (var x = (lowestX + currentX); x <= (highestX + currentX); x++) {
+            for (var y = (highestY + currentY); y < yGridAmount; y++) {
+                if(surfaceBlock[x][y] != null ){
+                    surfaceX.push(x);
+                    surfaceY.push(y);
                 }
             }
         }
-    }
 
-    ghostCalculated = true;
+        // sets ghost shapes y position equal to the lowest point
+        if(surfaceY.length == 0){
+            ghostCurrentY = yGridAmount - 1;
+            updateAgent = true;
+        }
+        else{
+            updateAgent = false;
+            ghostCurrentY = Math.min(...surfaceY);
+            // an offset to apply to L and J shape when vertical as the shape seemingly floats otherwise
+            var counter = 0;
+            for (var i = 0; i < shape.length; i++) {
+                if(BlockShapePosY[i] == 0 && lowestY - highestY > 1){
+                    counter++;
+                }
+            }
+            if(counter == 2 && ghostCurrentY != yGridAmount - 1){
+                ghostCurrentY++;
+            }
+            // if ghost shape inside a surface block displace up
+            for (var i = 0; i < shape.length; i++) {
+                for (var s = 0; s < surfaceX.length; s++) {
+                    var ghostX = BlockShapePosX[i] + currentX;
+                    var ghostY = ghostCurrentY + BlockShapePosY[i]- lowestY;
+                    if(ghostX == surfaceX[s] && surfaceY[s] == ghostY){
+                        ghostCurrentY--;
+                        // search for every individual block and surface value again if ghost shape displaced
+                        i = -1;
+                        s = -1;
+                    }
+                }
+            }
+            updateAgent = true;
+        }
+        
+        if(artAgent == true && updateAgent == true){
+            agentAlgorithm(updateAgent);
+        }
+        runGhost = true;
+    }
 }
 
 
