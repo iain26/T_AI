@@ -519,7 +519,7 @@ function utility(){
             }
         }
 
-        if(score - lastClearRate >= 0){
+        if(score >= lastClearRate){
             var change = ((attributes[i].pG + attributes[i].pD + attributes[i].pH + attributes[i].pB) -
                     (pointsG[i] + pointsD[i] + pointsH[i] + pointsB[i])) * 0.005;
             if(change > 0){
