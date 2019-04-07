@@ -1,6 +1,6 @@
 var numShapes = 7;
-var rand = Math.floor((Math.random() * numShapes) + 1);
-// var rand = 1;
+// var rand = Math.floor((Math.random() * numShapes) + 1);
+var rand = 1;
 var shapeIndex = rand - 1;
 
 // UI Image to show at top of the screen 
@@ -93,11 +93,11 @@ function CreateShape(){
             blocks.push(new image(2, 1,"MagentaBlock.jpg", 0, 0));
             break;
         }
-        rand = Math.floor((Math.random() * numShapes) + 1);
-        // rand ++;
-        // if(rand > 7){
-        //     rand = 1;
-        // }
+        // rand = Math.floor((Math.random() * numShapes) + 1);
+        rand ++;
+        if(rand > 7){
+            rand = 1;
+        }
         return blocks;
 }
 
