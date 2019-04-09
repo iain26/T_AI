@@ -61,10 +61,11 @@ function startGame(){
 // creates new shape and starts game loop
 function initialiseGame() {
     reset();
+
     if(artAgent){
-        rand = 1;
         setAgentValues();
     }
+    
     if (canvas.getContext)
     {
         if(artAgent == true){
@@ -503,7 +504,9 @@ function checkLine() {
 
 // start from first row to delete up and replace the grid values with ones from 1 grid space up
 function lineDeletion(yStart) {
+    
     addToPoints("line cleared", null);
+
     for (var yG = yStart; yG > 0; yG--) {
         for (var x = 0; x < xGridAmount; x++) {
             gridCellOccupied[x][yG] = gridCellOccupied[x][yG - 1];
